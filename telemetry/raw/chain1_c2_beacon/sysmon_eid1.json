@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 1,
+    "TimeCreated": { "SystemTime": "2026-05-14T11:23:10.441000Z" },
+    "Computer": "BOBBY",
+    "Message": "Process Create:\nRuleName: -\nUtcTime: 2026-05-14 11:23:10.441\nProcessGuid: {4a8f2c1d-3e7b-11ef-a1b2-000000000001}\nProcessId: 5120\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nFileVersion: 10.0.19041.1\nDescription: Windows PowerShell\nProduct: Microsoft Windows Operating System\nCompany: Microsoft Corporation\nOriginalFileName: PowerShell.EXE\nCommandLine: powershell.exe -EncodedCommand JABjAG8AbQBtAGEAbgBkACAAPQAgACcAbmV0IHVzZXIgaGFja2VyJwA=\nCurrentDirectory: C:\\Users\\LENOVO\\\nUser: BOBBY\\LENOVO\nLogonGuid: {4a8f2c1d-1234-11ef-0000-000000000000}\nLogonId: 0x127f2b\nTerminalSessionId: 1\nIntegrityLevel: High\nHashes: MD5=04029E121A0CFA5991749937DD22A1D9\nParentProcessGuid: {4a8f2c1d-3e7a-11ef-a1b2-000000000001}\nParentProcessId: 4724\nParentImage: C:\\Windows\\System32\\cmd.exe\nParentCommandLine: cmd.exe\nParentUser: BOBBY\\LENOVO"
+  }
+]

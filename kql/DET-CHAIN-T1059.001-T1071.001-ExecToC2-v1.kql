@@ -1,0 +1,76 @@
+// Detection ID: DET-CHAIN-T1059.001-T1071.001-ExecToC2-v1
+// Description:  Encoded PowerShell execution (Sysmon EID 1) followed by
+//               outbound network connection (Sysmon EID 3) from the same
+//               process via ProcessGuid correlation within 60 seconds.
+// Data Sources: Sysmon EID 1 (WindowsEvent), Sysmon EID 3 (WindowsEvent)
+// Severity:     High
+// Confidence:   Multi-source ProcessGuid join — high fidelity signal
+// MITRE:        T1059.001, T1071.001
+// Lab validated: 2026-05-14 against Kali attacker 192.168.126.128
+// Author:       Bobby Okafor
+// Version:      1
+
+let window = 60s;
+let encoded_ps_indicators = dynamic(["-enc", "-EncodedCommand", "-e "]);
+
+let EncodedPS = WindowsEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 1
+| where EventData has_any (encoded_ps_indicators)
+| where EventData has "powershell"
+| extend
+    ProcessGuid     = tostring(EventData.ProcessGuid),
+    ProcessName     = tostring(EventData.Image),
+    CommandLine     = tostring(EventData.CommandLine),
+    User            = tostring(EventData.User),
+    Host            = Computer,
+    LogonId         = tostring(EventData.LogonId)
+| where CommandLine has_any (encoded_ps_indicators)
+| project
+    t_ps = TimeGenerated, Host, User, ProcessGuid,
+    ProcessName, CommandLine, LogonId;
+
+let NetworkConn = WindowsEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 3
+| extend
+    ProcessGuid     = tostring(EventData.ProcessGuid),
+    DestinationIp   = tostring(EventData.DestinationIp),
+    DestinationPort = tostring(EventData.DestinationPort),
+    DestHostname    = tostring(EventData.DestinationHostname),
+    Initiated       = tostring(EventData.Initiated)
+| where Initiated == "true"
+| where not(DestinationIp matches regex @"^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)")
+      or DestinationIp == "192.168.126.128"  // Lab Kali attacker IP
+| project
+    t_net = TimeGenerated, ProcessGuid,
+    DestinationIp, DestinationPort, DestHostname;
+
+EncodedPS
+| join kind=inner NetworkConn on ProcessGuid
+| where t_net > t_ps
+| where t_net - t_ps <= window
+| extend
+    DeltaSeconds    = datetime_diff('second', t_net, t_ps),
+    DetectionID     = "DET-CHAIN-T1059.001-T1071.001-ExecToC2-v1",
+    Severity        = "High",
+    MITRETechniques = "T1059.001, T1071.001",
+    JoinField       = "ProcessGuid",
+    SourceDiversity = 2
+| project
+    TimeGenerated   = t_ps,
+    DetectionID,
+    Severity,
+    Host,
+    User,
+    ProcessGuid,
+    ProcessName,
+    CommandLine,
+    DestinationIp,
+    DestinationPort,
+    DestHostname,
+    DeltaSeconds,
+    MITRETechniques,
+    JoinField,
+    SourceDiversity
+| sort by TimeGenerated desc

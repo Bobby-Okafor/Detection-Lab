@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 1,
+    "TimeCreated": { "SystemTime": "2026-05-14T11:45:10.001000Z" },
+    "Computer": "BOBBY",
+    "Message": "Process Create:\nRuleName: -\nUtcTime: 2026-05-14 11:45:10.001\nProcessGuid: {4a8f2c1d-4b2e-11ef-a1b2-000000000003}\nProcessId: 7788\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nFileVersion: 10.0.19041.1\nDescription: Windows PowerShell\nProduct: Microsoft Windows Operating System\nCompany: Microsoft Corporation\nOriginalFileName: PowerShell.EXE\nCommandLine: powershell.exe -ExecutionPolicy Bypass -Command \"New-ItemProperty -Path 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run' -Name 'SecurityUpdate' -Value 'C:\\Users\\LENOVO\\AppData\\Roaming\\update.exe' -PropertyType String -Force; schtasks /create /sc onlogon /tn 'SecurityUpdate' /tr 'C:\\Users\\LENOVO\\AppData\\Roaming\\update.exe' /ru SYSTEM /f\"\nCurrentDirectory: C:\\Users\\LENOVO\\\nUser: BOBBY\\LENOVO\nLogonGuid: {4a8f2c1d-1234-11ef-0000-000000000000}\nLogonId: 0x127f2b\nTerminalSessionId: 1\nIntegrityLevel: High\nHashes: MD5=04029E121A0CFA5991749937DD22A1D9\nParentProcessGuid: {4a8f2c1d-4b2d-11ef-a1b2-000000000003}\nParentProcessId: 2076\nParentImage: C:\\Windows\\System32\\cmd.exe\nParentCommandLine: cmd.exe\nParentUser: BOBBY\\LENOVO"
+  }
+]

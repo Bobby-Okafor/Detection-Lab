@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 13,
+    "TimeCreated": { "SystemTime": "2026-05-14T11:45:10.887000Z" },
+    "Computer": "BOBBY",
+    "Message": "Registry value set:\nRuleName: -\nEventType: SetValue\nUtcTime: 2026-05-14 11:45:10.887\nProcessGuid: {4a8f2c1d-4b2e-11ef-a1b2-000000000003}\nProcessId: 7788\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nTargetObject: HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\SecurityUpdate\nDetails: C:\\Users\\LENOVO\\AppData\\Roaming\\update.exe\nUser: BOBBY\\LENOVO"
+  }
+]

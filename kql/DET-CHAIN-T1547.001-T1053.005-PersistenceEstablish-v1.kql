@@ -1,0 +1,89 @@
+// Detection ID: DET-CHAIN-T1547.001-T1053.005-PersistenceEstablish-v1
+// Description:  Scripting engine (PowerShell/cmd) writing a registry Run key
+//               (Sysmon EID 13) and/or creating a scheduled task (WinSec 4698)
+//               within 120 seconds. ProcessGuid and LogonId cross-source joins.
+// Data Sources: WindowsEvent Sysmon EID 1, EID 13; SecurityEvent 4698
+// Severity:     High
+// MITRE:        T1547.001, T1053.005
+// Author:       Bobby Okafor
+// Version:      1
+
+let window = 2m;
+
+let persistence_registry_paths = dynamic([
+    "CurrentVersion\\Run",
+    "CurrentVersion\\RunOnce",
+    "CurrentControlSet\\Services"
+]);
+
+let ScriptingProcs = WindowsEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 1
+| extend
+    ProcessGuid = tostring(EventData.ProcessGuid),
+    Image       = tostring(EventData.Image),
+    CmdLine     = tostring(EventData.CommandLine),
+    User        = tostring(EventData.User),
+    LogonId     = tostring(EventData.LogonId)
+| where Image has_any ("powershell", "cmd.exe", "wscript", "cscript")
+| project
+    t_proc = TimeGenerated, ProcessGuid, Image, CmdLine, User, LogonId, Computer;
+
+let RegistryPersist = WindowsEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 13
+| extend
+    ProcessGuid  = tostring(EventData.ProcessGuid),
+    TargetObject = tostring(EventData.TargetObject),
+    Details      = tostring(EventData.Details)
+| where TargetObject has_any (persistence_registry_paths)
+| project
+    t_reg = TimeGenerated, ProcessGuid, TargetObject, Details, Computer;
+
+let TaskCreation = SecurityEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 4698
+| project
+    t_task = TimeGenerated,
+    TaskName = TaskName,
+    TaskUser = SubjectUserName,
+    LogonId  = SubjectLogonId,
+    Computer;
+
+// Registry persistence correlation via ProcessGuid
+ScriptingProcs
+| join kind=inner RegistryPersist on ProcessGuid, Computer
+| where abs(datetime_diff('second', t_reg, t_proc)) <= 120
+| extend
+    DetectionID     = "DET-CHAIN-T1547.001-T1053.005-PersistenceEstablish-v1",
+    Severity        = "High",
+    PersistType     = "RegistryRunKey",
+    MITRETechniques = "T1547.001, T1053.005",
+    JoinField       = "ProcessGuid",
+    SourceDiversity = 2
+| project
+    TimeGenerated = t_proc,
+    DetectionID, Severity, Computer, User, Image, CmdLine,
+    RegistryKey = TargetObject, RegistryValue = Details,
+    ProcessGuid, LogonId, PersistType,
+    MITRETechniques, JoinField, SourceDiversity
+
+| union (
+    ScriptingProcs
+    | join kind=inner TaskCreation on $left.LogonId == $right.LogonId, Computer
+    | where abs(datetime_diff('second', t_task, t_proc)) <= 120
+    | extend
+        DetectionID     = "DET-CHAIN-T1547.001-T1053.005-PersistenceEstablish-v1",
+        Severity        = "High",
+        PersistType     = "ScheduledTask",
+        MITRETechniques = "T1547.001, T1053.005",
+        JoinField       = "LogonId",
+        SourceDiversity = 2
+    | project
+        TimeGenerated = t_proc,
+        DetectionID, Severity, Computer, User = TaskUser, Image, CmdLine,
+        RegistryKey = "", RegistryValue = "",
+        ProcessGuid, LogonId, TaskName, PersistType,
+        MITRETechniques, JoinField, SourceDiversity
+)
+| sort by TimeGenerated desc

@@ -1,68 +1,82 @@
 """
-schema_validator.py — Schema contract enforcement layer
+schema_validator.py — Schema contract enforcement
 
-Asserts that normalised events conform to the expected field contracts
-before they enter the detection engine. Schema drift (missing or
-type-mismatched fields) is surfaced explicitly rather than causing
-silent detection failures downstream.
+Validates normalised events against field contracts per event type.
+Supports both Sysmon flat-format and Windows Security message-format events.
 """
 
 import sys
 from typing import Optional
 
-# ---------------------------------------------------------------------------
-# Schema contracts per event type
-# ---------------------------------------------------------------------------
-
-# Each contract defines:
-#   required  — fields that must be present and non-None for the event to be valid
-#   typed     — fields that must be a specific Python type if present
-#   warn_only — fields whose absence triggers a warning but not a rejection
-
 SCHEMA_CONTRACTS: dict[int, dict] = {
-    4688: {
+    # Sysmon EID 1 — Process Create
+    1: {
         "required":  ["event_id", "time", "process_name"],
         "typed":     {"event_id": int, "time": str},
-        "warn_only": ["parent_process", "command_line", "user", "host"],
+        "warn_only": ["parent_process", "command_line", "user", "host", "process_guid", "logon_id"],
     },
-    4624: {
-        "required":  ["event_id", "time", "user", "logon_type"],
-        "typed":     {"event_id": int, "time": str},
-        "warn_only": ["src_ip", "host", "domain"],
-    },
-    4625: {
-        "required":  ["event_id", "time", "user"],
-        "typed":     {"event_id": int, "time": str},
-        "warn_only": ["src_ip", "host", "domain", "failure_reason"],
-    },
+    # Sysmon EID 3 — Network Connection
     3: {
         "required":  ["event_id", "time", "process_name", "dst_ip"],
         "typed":     {"event_id": int, "time": str},
-        "warn_only": ["dst_port", "src_ip", "user", "host"],
+        "warn_only": ["dst_port", "src_ip", "user", "host", "process_guid", "protocol"],
+    },
+    # Sysmon EID 13 — Registry Value Set
+    13: {
+        "required":  ["event_id", "time", "process_name", "registry_key"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["user", "host", "process_guid", "registry_value"],
+    },
+    # Sysmon EID 22 — DNS Query
+    22: {
+        "required":  ["event_id", "time", "process_name"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["query_name", "user", "host", "process_guid"],
+    },
+    # Windows Security 4688 — Process Create
+    4688: {
+        "required":  ["event_id", "time", "process_name"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["parent_process", "command_line", "user", "host", "logon_id"],
+    },
+    # Windows Security 4624 — Logon Success
+    4624: {
+        "required":  ["event_id", "time", "user"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["src_ip", "host", "logon_type", "logon_id", "domain"],
+    },
+    # Windows Security 4625 — Logon Failure
+    4625: {
+        "required":  ["event_id", "time", "user"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["src_ip", "host", "failure_reason"],
+    },
+    # Windows Security 4698 — Scheduled Task Created
+    4698: {
+        "required":  ["event_id", "time"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["task_name", "user", "host", "logon_id"],
+    },
+    # Windows Security 7045 — Service Installed
+    7045: {
+        "required":  ["event_id", "time", "service_name"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["service_file", "host"],
+    },
+    # Windows Security 4672 — Special Privileges
+    4672: {
+        "required":  ["event_id", "time", "user"],
+        "typed":     {"event_id": int, "time": str},
+        "warn_only": ["logon_id", "host", "privileges"],
     },
 }
 
-
-# ---------------------------------------------------------------------------
-# Public entry point
-# ---------------------------------------------------------------------------
 
 def validate_events(
     events: list[dict],
     strict: bool = False,
 ) -> tuple[list[dict], list[dict]]:
-    """
-    Validate a list of normalised events against their schema contracts.
-
-    Args:
-        events: List of normalised event dicts from normalize.py
-        strict: If True, events with warn_only violations are also rejected
-
-    Returns:
-        (valid_events, rejected_events)
-        Rejected events include a 'schema_violations' field listing failures.
-    """
-    valid = []
+    valid   = []
     rejected = []
 
     for event in events:
@@ -74,27 +88,29 @@ def validate_events(
             rejected.append(event)
             print(
                 f"[SCHEMA REJECT] event_id={event.get('event_id')} "
-                f"time={event.get('time')} "
-                f"violations={violations}",
+                f"time={event.get('time')} violations={violations}",
                 file=sys.stderr,
             )
-        elif warnings:
-            event["schema_warnings"] = warnings
-            print(
-                f"[SCHEMA WARN] event_id={event.get('event_id')} "
-                f"time={event.get('time')} "
-                f"warnings={warnings}",
-                file=sys.stderr,
-            )
-            if strict:
+        else:
+            if warnings:
+                event["schema_warnings"] = warnings
+                print(
+                    f"[SCHEMA WARN] event_id={event.get('event_id')} "
+                    f"time={event.get('time')} warnings={warnings}",
+                    file=sys.stderr,
+                )
+            if strict and warnings:
                 event["schema_violations"] = warnings
                 rejected.append(event)
             else:
                 valid.append(event)
-        else:
-            valid.append(event)
 
-    _print_summary(len(events), len(valid), len(rejected))
+    total = len(events)
+    print(
+        f"[SCHEMA] total={total} valid={len(valid)} rejected={len(rejected)} "
+        f"pass_rate={round(len(valid)/total*100, 1) if total else 0}%",
+        file=sys.stderr,
+    )
     return valid, rejected
 
 
@@ -102,44 +118,28 @@ def validate_schema_drift(
     events: list[dict],
     baseline_fields: Optional[dict[int, set]] = None,
 ) -> dict[int, set]:
-    """
-    Detect schema drift by comparing observed fields to a known baseline.
-
-    Returns a dict of {event_id: set_of_missing_fields}.
-    If no baseline is provided, uses the required fields from SCHEMA_CONTRACTS.
-    """
     drift_report: dict[int, set] = {}
 
     for event in events:
         eid = event.get("event_id")
         if eid not in SCHEMA_CONTRACTS:
             continue
-
         contract = SCHEMA_CONTRACTS[eid]
         expected = set(baseline_fields.get(eid, [])) if baseline_fields else set(
             contract["required"] + contract.get("warn_only", [])
         )
-        present = {k for k, v in event.items() if v is not None}
-        missing = expected - present
-
+        present  = {k for k, v in event.items() if v is not None and not k.startswith("_")}
+        missing  = expected - present
         if missing:
             if eid not in drift_report:
                 drift_report[eid] = set()
             drift_report[eid].update(missing)
 
-    if drift_report:
-        for eid, fields in drift_report.items():
-            print(
-                f"[SCHEMA DRIFT] event_id={eid} missing_fields={sorted(fields)}",
-                file=sys.stderr,
-            )
+    for eid, fields in drift_report.items():
+        print(f"[SCHEMA DRIFT] event_id={eid} missing={sorted(fields)}", file=sys.stderr)
 
     return drift_report
 
-
-# ---------------------------------------------------------------------------
-# Internal validation helpers
-# ---------------------------------------------------------------------------
 
 def _check_event(event: dict) -> tuple[list[str], list[str]]:
     eid = event.get("event_id")
@@ -151,31 +151,17 @@ def _check_event(event: dict) -> tuple[list[str], list[str]]:
 
     contract = SCHEMA_CONTRACTS[eid]
 
-    # Required field presence
-    for field in contract["required"]:
-        if event.get(field) is None:
-            violations.append(f"missing_required:{field}")
+    for f in contract["required"]:
+        if event.get(f) is None:
+            violations.append(f"missing_required:{f}")
 
-    # Type assertions
-    for field, expected_type in contract.get("typed", {}).items():
-        value = event.get(field)
-        if value is not None and not isinstance(value, expected_type):
-            violations.append(
-                f"type_mismatch:{field} expected={expected_type.__name__} "
-                f"got={type(value).__name__}"
-            )
+    for f, t in contract.get("typed", {}).items():
+        val = event.get(f)
+        if val is not None and not isinstance(val, t):
+            violations.append(f"type_mismatch:{f} expected={t.__name__} got={type(val).__name__}")
 
-    # Warn-only fields
-    for field in contract.get("warn_only", []):
-        if event.get(field) is None:
-            warnings.append(f"missing_optional:{field}")
+    for f in contract.get("warn_only", []):
+        if event.get(f) is None:
+            warnings.append(f"missing_optional:{f}")
 
     return violations, warnings
-
-
-def _print_summary(total: int, valid: int, rejected: int) -> None:
-    print(
-        f"[SCHEMA] total={total} valid={valid} rejected={rejected} "
-        f"pass_rate={round(valid / total * 100, 1) if total else 0}%",
-        file=sys.stderr,
-    )

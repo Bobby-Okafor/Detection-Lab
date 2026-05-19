@@ -1,0 +1,8 @@
+[
+  {
+    "Id": 3,
+    "TimeCreated": { "SystemTime": "2026-05-14T11:23:22.187000Z" },
+    "Computer": "BOBBY",
+    "Message": "Network connection detected:\nRuleName: -\nUtcTime: 2026-05-14 11:23:22.187\nProcessGuid: {4a8f2c1d-3e7b-11ef-a1b2-000000000001}\nProcessId: 5120\nImage: C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\nUser: BOBBY\\LENOVO\nProtocol: tcp\nInitiated: true\nSourceIsIpv6: false\nSourceIp: 192.168.126.1\nSourceHostname: BOBBY\nSourcePort: 49823\nSourcePortName: -\nDestinationIsIpv6: false\nDestinationIp: 192.168.126.128\nDestinationHostname: kali\nDestinationPort: 4444\nDestinationPortName: -"
+  }
+]

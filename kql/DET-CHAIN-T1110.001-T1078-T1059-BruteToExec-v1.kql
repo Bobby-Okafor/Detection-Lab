@@ -1,0 +1,88 @@
+// Detection ID: DET-CHAIN-T1110.001-T1078-T1059-BruteToExec-v1
+// Description:  Brute force failed logons (EID 4625) from same source IP,
+//               followed by successful logon (EID 4624), followed by process
+//               execution (Sysmon EID 1) under the authenticated LogonId.
+//               Three-source correlation: identity failure + success + endpoint.
+// Data Sources: SecurityEvent (4624, 4625), WindowsEvent Sysmon EID 1
+// Severity:     Critical
+// MITRE:        T1110.001, T1078, T1059
+// Author:       Bobby Okafor
+// Version:      1
+
+let window        = 5m;
+let fail_threshold = 5;
+
+let FailedLogons = SecurityEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 4625
+| where IpAddress !in ("127.0.0.1", "-", "::1")
+| where TargetUserName !in ("", "-", "ANONYMOUS LOGON")
+| summarize
+    FailureCount = count(),
+    FirstFailure = min(TimeGenerated),
+    LastFailure  = max(TimeGenerated),
+    FailPorts    = make_set(IpPort, 10)
+    by TargetUserName, IpAddress, Computer
+| where FailureCount >= fail_threshold;
+
+let SuccessLogons = SecurityEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 4624
+| where LogonType in ("3", "10")
+| where IpAddress !in ("127.0.0.1", "-", "::1")
+| project
+    t_success = TimeGenerated,
+    SuccessUser = TargetUserName,
+    SuccessIp   = IpAddress,
+    LogonId     = TargetLogonId,
+    LogonType,
+    Computer;
+
+let PostExec = WindowsEvent
+| where TimeGenerated > ago(1d)
+| where EventID == 1
+| extend
+    User    = tostring(EventData.User),
+    LogonId = tostring(EventData.LogonId),
+    Image   = tostring(EventData.Image),
+    CmdLine = tostring(EventData.CommandLine),
+    ProcGuid = tostring(EventData.ProcessGuid)
+| project t_exec = TimeGenerated, User, LogonId, Image, CmdLine, ProcGuid, Computer;
+
+FailedLogons
+| join kind=inner SuccessLogons on
+    $left.TargetUserName == $right.SuccessUser and
+    $left.IpAddress == $right.SuccessIp and
+    $left.Computer == $right.Computer
+| where t_success between (LastFailure .. LastFailure + window)
+| join kind=inner PostExec on
+    $left.LogonId == $right.LogonId and
+    $left.Computer == $right.Computer
+| where t_exec > t_success
+| where t_exec - t_success <= window
+| extend
+    DetectionID        = "DET-CHAIN-T1110.001-T1078-T1059-BruteToExec-v1",
+    Severity           = "Critical",
+    MITRETechniques    = "T1110.001, T1078, T1059",
+    DeltaFailToSuccess = datetime_diff('second', t_success, FirstFailure),
+    DeltaSuccessToExec = datetime_diff('second', t_exec, t_success),
+    JoinFields         = "src_ip + logon_id",
+    SourceDiversity    = 3
+| project
+    TimeGenerated   = t_success,
+    DetectionID,
+    Severity,
+    Computer,
+    SuccessUser,
+    AttackerIp      = SuccessIp,
+    FailureCount,
+    LogonType,
+    LogonId,
+    FirstProcessExec = Image,
+    CommandLine      = CmdLine,
+    DeltaFailToSuccess,
+    DeltaSuccessToExec,
+    MITRETechniques,
+    JoinFields,
+    SourceDiversity
+| sort by TimeGenerated desc

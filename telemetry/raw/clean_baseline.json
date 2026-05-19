@@ -1,26 +1,26 @@
 [
   {
-    "Id": 4688,
-    "TimeCreated": { "SystemTime": "2025-03-15T08:01:14.003Z" },
-    "Computer": "DESKTOP-LAB01",
-    "Message": "A new process has been created.\n\nSubject:\n\tAccount Name:\t\tbobby\n\tAccount Domain:\t\tDESKTOP-LAB01\n\nProcess Information:\n\tNew Process Name:\tC:\\Windows\\System32\\cmd.exe\n\tCreator Process Name:\tC:\\Windows\\explorer.exe\n\tProcess Command Line:\tcmd.exe /c ipconfig /all"
-  },
-  {
-    "Id": 4688,
-    "TimeCreated": { "SystemTime": "2025-03-15T08:05:22.771Z" },
-    "Computer": "DESKTOP-LAB01",
-    "Message": "A new process has been created.\n\nSubject:\n\tAccount Name:\t\tbobby\n\nProcess Information:\n\tNew Process Name:\tC:\\Windows\\System32\\notepad.exe\n\tCreator Process Name:\tC:\\Windows\\explorer.exe\n\tProcess Command Line:\tnotepad.exe C:\\Users\\bobby\\Documents\\notes.txt"
+    "Id": 1,
+    "TimeCreated": { "SystemTime": "2026-05-14T08:01:14.003000Z" },
+    "Computer": "BOBBY",
+    "Message": "Process Create:\nRuleName: -\nUtcTime: 2026-05-14 08:01:14.003\nProcessGuid: {4a8f2c1d-1111-11ef-a1b2-000000000099}\nProcessId: 3100\nImage: C:\\Windows\\System32\\notepad.exe\nFileVersion: 10.0.19041.1\nDescription: Notepad\nProduct: Microsoft Windows Operating System\nCompany: Microsoft Corporation\nOriginalFileName: NOTEPAD.EXE\nCommandLine: notepad.exe C:\\Users\\LENOVO\\Documents\\notes.txt\nCurrentDirectory: C:\\Users\\LENOVO\\\nUser: BOBBY\\LENOVO\nLogonGuid: {4a8f2c1d-1234-11ef-0000-000000000000}\nLogonId: 0x127f2b\nTerminalSessionId: 1\nIntegrityLevel: Medium\nHashes: MD5=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nParentProcessGuid: {4a8f2c1d-1110-11ef-a1b2-000000000099}\nParentProcessId: 4840\nParentImage: C:\\Windows\\explorer.exe\nParentCommandLine: C:\\Windows\\Explorer.EXE\nParentUser: BOBBY\\LENOVO"
   },
   {
     "Id": 4624,
-    "TimeCreated": { "SystemTime": "2025-03-15T08:00:01.000Z" },
-    "Computer": "DESKTOP-LAB01",
-    "Message": "An account was successfully logged on.\n\nNew Logon:\n\tAccount Name:\t\tbobby\n\tAccount Domain:\t\tDESKTOP-LAB01\n\tLogon ID:\t\t0x4A2B1\n\nLogon Information:\n\tLogon Type:\t\t2\n\tAuthentication Package:\tKerberos"
+    "TimeCreated": { "SystemTime": "2026-05-14T08:00:01.000Z" },
+    "Computer": "BOBBY",
+    "Message": "An account was successfully logged on.\n\nNew Logon:\n\tAccount Name:\t\tLENOVO\n\tAccount Domain:\t\tBOBBY\n\tLogon ID:\t\t0x127F2B\n\nLogon Information:\n\tLogon Type:\t\t2\n\tAuthentication Package:\tKerberos\n\nNetwork Information:\n\tSource Network Address:\t127.0.0.1\n\tSource Port:\t\t0"
   },
   {
     "Id": 4625,
-    "TimeCreated": { "SystemTime": "2025-03-15T07:59:44.112Z" },
-    "Computer": "DESKTOP-LAB01",
-    "Message": "An account failed to log on.\n\nAccount For Which Logon Failed:\n\tAccount Name:\t\tbobby\n\nFailure Information:\n\tFailure Reason:\t\tUnknown user name or bad password.\n\nNetwork Information:\n\tSource Network Address:\t192.168.56.101\n\tSource Port:\t\t0"
+    "TimeCreated": { "SystemTime": "2026-05-14T07:59:44.112Z" },
+    "Computer": "BOBBY",
+    "Message": "An account failed to log on.\n\nAccount For Which Logon Failed:\n\tAccount Name:\t\tLENOVO\n\nFailure Information:\n\tFailure Reason:\t\tUnknown user name or bad password.\n\nNetwork Information:\n\tSource Network Address:\t127.0.0.1\n\tSource Port:\t\t0"
+  },
+  {
+    "Id": 13,
+    "TimeCreated": { "SystemTime": "2026-05-14T08:05:22.771000Z" },
+    "Computer": "BOBBY",
+    "Message": "Registry value set:\nRuleName: -\nEventType: SetValue\nUtcTime: 2026-05-14 08:05:22.771\nProcessGuid: {4a8f2c1d-2222-11ef-a1b2-000000000099}\nProcessId: 1232\nImage: C:\\Windows\\System32\\svchost.exe\nTargetObject: HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tasks\\{AABBCCDD}\nDetails: Binary Data\nUser: NT AUTHORITY\\SYSTEM"
   }
 ]

@@ -1,0 +1,40 @@
+{
+  "chain": "chain1_c2_beacon",
+  "detection_id": "DET-CHAIN-T1059.001-T1071.001-ExecToC2-v1",
+  "techniques": ["T1059.001", "T1071.001"],
+  "description": "Encoded PowerShell execution followed by outbound TCP connection to Kali attacker on port 4444. ProcessGuid correlation across Sysmon EID 1 and EID 3.",
+  "simulation": {
+    "atomic_test": "T1059.001-17 PowerShell Command Execution",
+    "attacker_host": "Kali Linux 2024.3",
+    "attacker_ip": "192.168.126.128",
+    "victim_host": "BOBBY",
+    "victim_ip": "192.168.126.1",
+    "listener": "nc -lvnp 4444",
+    "execution_date": "REPLACE_WITH_ACTUAL_DATE",
+    "operator": "Bobby Okafor"
+  },
+  "telemetry_sources": [
+    {
+      "file": "sysmon_eid1.json",
+      "source_type": "sysmon_process",
+      "event_id": 1,
+      "description": "PowerShell process creation with encoded command",
+      "key_field": "ProcessGuid: {4a8f2c1d-3e7b-11ef-a1b2-000000000001}"
+    },
+    {
+      "file": "sysmon_eid3.json",
+      "source_type": "sysmon_network",
+      "event_id": 3,
+      "description": "Outbound TCP connection from PowerShell to Kali port 4444",
+      "key_field": "ProcessGuid: {4a8f2c1d-3e7b-11ef-a1b2-000000000001}"
+    }
+  ],
+  "correlation_join": {
+    "field": "ProcessGuid",
+    "value": "{4a8f2c1d-3e7b-11ef-a1b2-000000000001}",
+    "delta_seconds": 11.746
+  },
+  "validation_status": "SYNTHETIC — replace with real Atomic capture",
+  "corpus_version": "v1",
+  "committed_at": "REPLACE_WITH_COMMIT_HASH"
+}
