@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from correlate import CorrelationChain
+    from .correlate import CorrelationChain
 
 PIPELINE_VERSION = "2.0.0"
 

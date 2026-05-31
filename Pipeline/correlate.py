@@ -225,10 +225,11 @@ def build_correlation_chains(
 
     for event in events:
         pg = event.get("process_guid")
-        if pg:
-            guid_index.setdefault(pg, []).append(event)
 
+        if pg and pg != "{00000000-0000-0000-0000-000000000000}":
+            guid_index.setdefault(pg, []).append(event)
         lid = event.get("logon_id")
+        
         if lid:
             logon_id_index.setdefault(lid, []).append(event)
 
