@@ -106,10 +106,10 @@ def _normalise_sysmon_eid1(raw: dict) -> dict:
         "parent_process": _clean(parent_process),
         "command_line":   command_line,
         "user":           _clean_user(user),
-        "process_guid":   _clean(process_guid),
-        "parent_guid":    _clean(parent_guid),
+        "process_guid":   _clean_guid(process_guid),
+        "parent_guid":    _clean_guid(parent_guid),
         "logon_id":       _normalise_logon_id(logon_id),
-        "logon_guid":     _clean(logon_guid),
+        "logon_guid":     _clean_guid(logon_guid),
         "integrity_level": integrity,
         "hashes":         hashes,
     }
@@ -140,7 +140,7 @@ def _normalise_sysmon_eid3(raw: dict) -> dict:
         "time":            _safe_extract_time(raw, kv),
         "host":            _extract_host(raw, kv),
         "process_name":    _clean(process_name),
-        "process_guid":    _clean(process_guid),
+        "process_guid":    _clean_guid(process_guid),
         "user":            _clean_user(user),
         "dst_ip":          _clean(dst_ip),
         "dst_port":        dst_port,
@@ -173,7 +173,7 @@ def _normalise_sysmon_eid13(raw: dict) -> dict:
         "time":          _safe_extract_time(raw, kv),
         "host":          _extract_host(raw, kv),
         "process_name":  _clean(process_name),
-        "process_guid":  _clean(process_guid),
+        "process_guid":  _clean_guid(process_guid),
         "user":          _clean_user(user),
         "registry_key":  _clean(target_obj),
         "registry_value": details,
@@ -195,7 +195,7 @@ def _normalise_sysmon_eid22(raw: dict) -> dict:
         "time":         _safe_extract_time(raw, kv),
         "host":         _extract_host(raw, kv),
         "process_name": _clean(raw.get("Image") or kv.get("Image")),
-        "process_guid": _clean(raw.get("ProcessGuid") or kv.get("ProcessGuid")),
+        "process_guid": _clean_guid(raw.get("ProcessGuid") or kv.get("ProcessGuid")),
         "user":         _clean_user(raw.get("User") or kv.get("User")),
         "query_name":   _clean(raw.get("QueryName") or kv.get("QueryName")),
         "query_status": raw.get("QueryStatus") or kv.get("QueryStatus"),
@@ -482,12 +482,30 @@ def _safe_extract_time(event: dict, kv: dict) -> Optional[str]:
 def _convert_time(raw_time) -> Optional[str]:
     if raw_time is None:
         return None
+
+    # ISO 8601 format
     if isinstance(raw_time, str) and re.match(r"\d{4}-\d{2}-\d{2}T", raw_time):
         try:
             dt = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
             return dt.astimezone(timezone.utc).isoformat()
         except ValueError:
             pass
+
+    # Sysmon space-separated format
+    if isinstance(raw_time, str):
+        try:
+            dt = datetime.strptime(raw_time, "%Y-%m-%d %H:%M:%S.%f")
+            return dt.replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            pass
+
+        try:
+            dt = datetime.strptime(raw_time, "%Y-%m-%d %H:%M:%S")
+            return dt.replace(tzinfo=timezone.utc).isoformat()
+        except ValueError:
+            pass
+
+    # Epoch / Windows FILETIME handling
     try:
         val = int(re.search(r"\d+", str(raw_time)).group())
     except (AttributeError, ValueError, TypeError):
@@ -504,7 +522,6 @@ def _convert_time(raw_time) -> Optional[str]:
         return datetime.fromtimestamp(epoch_sec, tz=timezone.utc).isoformat()
     except (OSError, OverflowError, ValueError):
         return None
-
 
 def _extract_host(event: dict, kv: dict) -> Optional[str]:
     return (
@@ -533,6 +550,21 @@ def _clean(value: Optional[str]) -> Optional[str]:
         return None
     return stripped
 
+def _clean_guid(value: Optional[str]) -> Optional[str]:
+    val = _clean(value)
+
+    if not val:
+        return None
+
+    zero_guids = {
+        "{00000000-0000-0000-0000-000000000000}",
+        "00000000-0000-0000-0000-000000000000",
+    }
+
+    if val.lower() in zero_guids:
+        return None
+
+    return val
 
 def _clean_user(value: Optional[str]) -> Optional[str]:
     """Clean user field, also filtering machine accounts and system accounts."""
